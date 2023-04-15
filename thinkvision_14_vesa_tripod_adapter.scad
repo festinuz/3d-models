@@ -55,7 +55,6 @@ module thinkvisionVesaAdapter() {
             if (Leg_type == "elevated") {
                 getStandLegs(9, true); 
             }
-            standLegs(legsHeight);
             truncatedNutMount();
             if (Add_finger_grips) {
                 fingerGrips();
