@@ -16,8 +16,13 @@ mountOuterRad = 8; // [7:15]
 baseHeight = 4; // [3:8]
 
 // Legs
-legsHeight = 8;
+legsHeight = 7; // TODO check that i have this before printing
 isRoundedLegs = false;
+
+// Bolt mount
+boltBodyHoleRad = 1.95;
+boltCapHoleRad = 3.9;
+boltBodyLength = 4;
 
 // Nut mount
 nutMountHeight = 4;
@@ -33,8 +38,8 @@ module thinkvisionVesaAdapter() {
     difference() {
         union() {
             basePlate();
-            standLegs();
-            nutMount();
+            standLegs(legsHeight);
+            truncatedNutMount();
             fingerGrips();
         }
         lowerPlateRounding();
@@ -79,7 +84,7 @@ module basePlate() {
     }
 }
 
-module standLegs() {
+module standLegs(height) {
     xOuter = vesaMountingPointDistance / 2 + mountOuterRad;
     xInner = vesaMountingPointDistance / 2 - mountOuterRad;
     y = standDepth / 2;
@@ -94,7 +99,7 @@ module standLegs() {
 
     polyRoundExtrude(
         legPoints,
-        legsHeight,
+        height,
         legRoundingRad,
         0
     );
@@ -102,10 +107,17 @@ module standLegs() {
     mirror([1, 0, 0])
     polyRoundExtrude(
         legPoints,
-        legsHeight,
+        height,
         legRoundingRad,
         0
     );
+}
+
+module truncatedNutMount() {
+    difference() {
+        nutMount();
+        standLegs(nutMountHeight+baseHeight);
+    }
 }
 
 module nutMount() {
@@ -228,10 +240,6 @@ module mountHoles() {
 }
 
 module boltHole() {
-    boltBodyHoleRad = 2;
-    boltCapHoleRad = 4;
-    boltBodyLength = 4;
-
     translate([0,0,-0.5])
     cylinder(legsHeight+1, r=boltBodyHoleRad);
 
