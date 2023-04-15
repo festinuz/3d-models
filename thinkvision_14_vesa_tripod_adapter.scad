@@ -1,135 +1,419 @@
+include <./lib/polyround.scad>
+
+Include_Logo = true;
+
+/* [Legs] */
+Leg_width = 16; // [14:1:30]
+
+// Print rounded plastic legs or leave space for leg cutouts
+Leg_type = "cutout"; // [cutout, flat, elevated]
+
+// Print leg-sized tool to help making leg cutouts
+Include_leg_cutout_helper_tool = true;
+
+/* [Finger grips] */
+// Add two holes that can be used as finger grips
+Add_finger_grips = true;
+Finger_grip_radius = 9; // [4:12]
+Finger_grip_Height = 5; // [4:8]
+
+// TODO add bolt & nut mount settings
+
+
+/* [Hidden] */
 $fn=64;
+mountOuterRad = Leg_width / 2;
+vesaMountingPointDistance = 100;
+roundingRad = 2;
 
+// Base
+standDepth = 89;
+baseHeight = 4;
 
-module thinkvision_vesa_adapter() {
-    base_h=4;
-    legs_h=8;
-    vesa_small_d=4;
-    vesa_small_rad=5;
-    vesa_big_rad=9;
-    hex_d=6;
-    hex_w=12;
-  
+// Bolt mount
+boltBodyHoleRad = 1.9;
+boltCapHoleRad = 3.8;
+boltBodyLength = 4;
+
+// Nut mount
+nutMountHeight = 4;
+nutSideToSideLen = 12;
+nutMountOuterRad = 15;
+nutMountBorderOffset = 10;
+
+module thinkvisionVesaAdapter() {
     difference() {
-        base(base_h, legs_h);
-        translate([50, 20, legs_h])
-            fhex(hex_w, 2*hex_d);
-        translate([0, 72.5, 0])
-            bolt_hole(legs_h, vesa_small_d, vesa_small_rad, vesa_big_rad);
-        translate([100, 72.5, 0])
-            bolt_hole(legs_h, vesa_small_d, vesa_small_rad, vesa_big_rad);
-        translate([50, 50, legs_h-1.1])
-            cylinder(2, d=24);
+        union() {
+            basePlate();
+            if (Leg_type == "cutout") {
+                // Just enough space for vesa bolt head
+                getStandLegs(7, false); 
+            }
+            if (Leg_type == "flat") {
+                getStandLegs(8, false); 
+            }
+            if (Leg_type == "elevated") {
+                getStandLegs(9, true); 
+            }
+            truncatedNutMount();
+            if (Add_finger_grips) {
+                fingerGrips();
+            }
+        }
+        lowerPlateRounding();
+        mountHoles();
+        nutHole();
+        if (Add_finger_grips) {
+            fingerGripHoles();
+        }
+        if (Include_Logo) {
+            logo();
+        }
     }
 
-    //color("#335791")
-    translate([50, 50, legs_h-2])
-        signature();
+    if (Include_leg_cutout_helper_tool) {
+        legCutoutTool();
+    }
 }
 
+module legCutoutTool() {
+    x = 2*mountOuterRad;
+    y = standDepth;
 
-module base(base_h, legs_h) {
-    inner_base_w=100;
-    outer_base_d=80;
-    outer_legs_dia=15;
-    
-    inner_base_d=outer_base_d - outer_legs_dia;
-    outer_bolt_rad=outer_legs_dia/2;
-    
-    cube([inner_base_w, outer_base_d, base_h]);
+    legPoints = [
+        [0, 0, mountOuterRad],
+        [0, y, mountOuterRad],
+        [x, y, mountOuterRad],
+        [x, 0, mountOuterRad]
+    ];
 
-    // Add round leg edges
-    translate([0,outer_bolt_rad,0])
-        cylinder(legs_h, d=outer_legs_dia);
-    
-    translate([inner_base_w,outer_bolt_rad,0])
-        cylinder(legs_h, d=outer_legs_dia);
-    
-    translate([0,outer_base_d-outer_bolt_rad,0])
-        cylinder(legs_h, d=outer_legs_dia);
-    
-    translate([inner_base_w,outer_base_d-outer_bolt_rad,0])
-        cylinder(legs_h, d=outer_legs_dia);
+    xOffset = -(vesaMountingPointDistance / 2 + mountOuterRad);
+    yOffset = -(standDepth/2 + mountOuterRad);
+    translate([xOffset, yOffset, 0])
+    rotate(270)
+    polyRoundExtrude(
+        legPoints,
+        2,
+        roundingRad,
+        0
+    );
+}
 
-    // Add leg edge connections
-    translate([0, inner_base_d, 0])
-        cube([inner_base_w, outer_legs_dia, legs_h]);
-
-    translate([-outer_bolt_rad, outer_bolt_rad,0])
-        cube([outer_legs_dia, inner_base_d, legs_h]);
+module basePlate() {
+    xOffset = vesaMountingPointDistance / 2 + mountOuterRad;
+    yOffset = standDepth / 2;
+    platePoints = [
+        [-xOffset, -yOffset, mountOuterRad],
+        [-xOffset, yOffset, mountOuterRad],
+        [xOffset, yOffset, mountOuterRad],
+        [xOffset, -yOffset, mountOuterRad]
+    ];
     
-    translate([inner_base_w-outer_bolt_rad, outer_bolt_rad,0])
-        cube([outer_legs_dia, inner_base_d, legs_h]);
+
+    xBeamOffset = vesaMountingPointDistance / 2;
+    yBeamOffset = yOffset;
+    frontRoundingBeamPoints = [
+        [-xBeamOffset, -yBeamOffset, 0],
+        [xBeamOffset, -yBeamOffset, 0],
+        [xBeamOffset, -yBeamOffset-roundingRad, 0],
+        [-xBeamOffset, -yBeamOffset-roundingRad, 0]
+    ];
+
+    difference() {
+        linear_extrude(baseHeight)
+            polygon(polyRound(platePoints,30));
         
-    // Add center leg and connections
-    center_dia = 20;
-    center_d_offset = 20;
-    
-    center_rad = center_dia / 2;
-    center_w = inner_base_w / 2;
- 
-    translate([center_w,center_d_offset,0])
-        cylinder(legs_h, d=center_dia);
-        
-    linear_extrude(legs_h) {
-        polygon(
-        [
-            [0, inner_base_d],
-            [center_w-center_rad, center_d_offset],
-            [center_w+center_rad, center_d_offset],
-            [inner_base_w, inner_base_d],
-        ]
+        // Base top side front edge rounding
+        polyRoundExtrude(
+            frontRoundingBeamPoints,
+            baseHeight,
+            -roundingRad,
+            0
         );
     }
-
-    translate([86.5, 40.8, 0])
-        round_inner_corner(6,legs_h, 5,4.2);
-
-    translate([13.5, 40.8, 0])
-        mirror([1,0,0])
-        round_inner_corner(6,legs_h, 5,4.2);
 }
 
+module getStandLegs(height, isRoundedLegs) {
+    xOuter = vesaMountingPointDistance / 2 + mountOuterRad;
+    xInner = vesaMountingPointDistance / 2 - mountOuterRad;
+    y = standDepth / 2;
+    legRoundingRad = isRoundedLegs? roundingRad : 0;
 
-module fhex(wid,height){
-hull(){
-cube([wid/1.7,wid,height],center = true);
-rotate([0,0,120])cube([wid/1.7,wid,height],center = true);
-rotate([0,0,240])cube([wid/1.7,wid,height],center = true);
-}
+    legPoints = [
+        [-xOuter, -y, mountOuterRad],
+        [-xOuter, y, mountOuterRad],
+        [-xInner, y, mountOuterRad],
+        [-xInner, -y, mountOuterRad]
+    ];
+
+    polyRoundExtrude(
+        legPoints,
+        height,
+        legRoundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    polyRoundExtrude(
+        legPoints,
+        height,
+        legRoundingRad,
+        0
+    );
 }
 
-module bolt_hole(legs_h, vesa_small_d, vesa_small_rad, vesa_big_rad) {
-    translate([0,0,-0.5]) 
-        cylinder(legs_h+1, d=vesa_small_rad);
+module truncatedNutMount() {
+    difference() {
+        nutMount();
+        getStandLegs(10, false);
+    }
+}
+
+module nutMount() {
+    x = vesaMountingPointDistance / 2 - mountOuterRad;
+    yOuter = standDepth / 2;
+    yInner = standDepth / 2 - 2*mountOuterRad;
+    yMountCenter = -yOuter + nutMountBorderOffset;
+
+    nutMountRightHalfPlatePoints = [
+        [-nutMountOuterRad, yOuter, 0],
+        [x+mountOuterRad, yOuter, 0],
+        [x, yInner, 0],
+        [nutMountOuterRad, yMountCenter+nutMountOuterRad, 0],
+        [nutMountOuterRad, yMountCenter, nutMountOuterRad],
+        [0, yMountCenter, 0],
+        [-nutMountOuterRad, yMountCenter, nutMountOuterRad]
+    ];
+
+    translate([0,0,baseHeight])
+    polyRoundExtrude(
+        nutMountRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([0,0,baseHeight])
+    polyRoundExtrude(
+        nutMountRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
+
+    xLegInner = vesaMountingPointDistance/2 - mountOuterRad;
+    xNutMount = (nutMountOuterRad + xLegInner) / 2;
+    xMiddlePoint = (xLegInner + xNutMount) / 2;
+
+    legConRad = (xLegInner - xNutMount) / 2;
+
+    yMiddlePoint = (
+        (yMountCenter + nutMountOuterRad + yInner) / 2 + legConRad
+    );
+    yLegInner = yMiddlePoint - legConRad;
+    yNutMount = yLegInner;
     
-    translate([0,0,vesa_small_d])
-        cylinder(legs_h-vesa_small_d+0.5, d=vesa_big_rad);
+    nutMountLegConnectorRightHalfPlatePoints = [
+        [nutMountOuterRad, yMountCenter+nutMountOuterRad, 0],
+        [xNutMount,       yNutMount,           0],
+        [xMiddlePoint,    yMiddlePoint,        legConRad],
+        [xLegInner,       yLegInner,           legConRad],
+        [xLegInner,       yLegInner-legConRad, 0],
+        [x+mountOuterRad, yLegInner-legConRad, 0],
+        [x+mountOuterRad, yOuter,              0],
+        [xNutMount,       yOuter,              0]
+    ];
+
+    translate([0,0,baseHeight])
+    polyRoundExtrude(
+        nutMountLegConnectorRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([0,0,baseHeight])
+    polyRoundExtrude(
+        nutMountLegConnectorRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
 }
 
-module signature() {
-    cylinder(1, d=24);
-    linear_extrude(2) {
-        difference() {
-            circle(10);
-            circle(8);
-            square([2,20], center=true);
-        }
-        translate([-2, 0, 0])
-            square([2,16], center=true);
-        translate([2, 0, 0])
-            square([2,16], center=true);
+module lowerPlateRounding() {
+    xInner = vesaMountingPointDistance / 2 + mountOuterRad;
+    xOuter = xInner + roundingRad;
+    yInner = standDepth / 2;
+    yOuter = yInner + roundingRad;
+    
+    backRoundingPoints = [
+        [-xInner, yInner, mountOuterRad],
+        [xInner, yInner, mountOuterRad],
+        [xInner, yInner-mountOuterRad, 0],
+        [xOuter, yInner-mountOuterRad, 0],
+        [xOuter, yOuter, 0],
+        [-xOuter, yOuter, 0],
+        [-xOuter, yInner-mountOuterRad, 0],
+        [-xInner, yInner-mountOuterRad, 0]
+    ];
+    
+    polyRoundExtrude(
+        backRoundingPoints,
+        roundingRad,
+        0,
+        -roundingRad
+    );
+
+    mirror([0, 1, 0])
+    polyRoundExtrude(
+        backRoundingPoints,
+        roundingRad,
+        0,
+        -roundingRad
+    );
+}
+
+module mountHoles() {
+    x = vesaMountingPointDistance / 2;
+    y = 36.25;
+
+    translate([x, y, 0])
+    boltHole();
+
+
+    translate([-x, y, 0])
+    boltHole();
+}
+
+module boltHole() {
+    translate([0,0,-0.5])
+    cylinder(10, r=boltBodyHoleRad);
+
+    translate([0,0, boltBodyLength])
+    cylinder(10-boltBodyLength, r=boltCapHoleRad);
+}
+
+module nutHole() {
+    wid = nutSideToSideLen;
+    yOffset = -(standDepth/2 - nutMountBorderOffset - nutMountOuterRad);
+    bottomOffset = 2;  // Minimum 3d-printable offset
+    height = baseHeight + nutMountHeight - bottomOffset+0.5;
+
+    translate([0,yOffset, bottomOffset + height/2])
+    hull() {
+        cube([wid/1.7,wid,height],center = true);
+        rotate([0,0,120])cube([wid/1.7,wid,height],center = true);
+        rotate([0,0,240])cube([wid/1.7,wid,height],center = true);
     }
 }
 
-module round_inner_corner(rad, h, w, neg_w) {
-    linear_extrude(h) {
+module fingerGrips() {
+    rad = Finger_grip_radius;
+    height = Finger_grip_Height;
+    xOffset = (
+        (vesaMountingPointDistance/2 - mountOuterRad)
+        + nutMountOuterRad
+    ) / 2;
+    yOffset = -(
+        standDepth/2 - nutMountBorderOffset - Finger_grip_radius
+    );
+
+    points = [
+        [-rad, -rad, rad],
+        [rad, -rad, rad],
+        [rad, rad, rad],
+        [-rad, rad, rad],
+    ];
+
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        roundingRad,
+        0
+    );
+}
+
+module fingerGripHoles() {
+    rad = Finger_grip_radius - 2*roundingRad;
+    height = Finger_grip_Height;
+    xOffset = (
+        (vesaMountingPointDistance/2 - mountOuterRad)
+        + nutMountOuterRad
+    ) / 2;
+    yOffset = -(
+        standDepth/2 - nutMountBorderOffset - Finger_grip_radius
+    );
+
+    points = [
+        [-rad, -rad, rad],
+        [rad, -rad, rad],
+        [rad, rad, rad],
+        [-rad, rad, rad],
+    ];
+
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        -roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        -roundingRad,
+        0
+    );
+}
+
+module logo() {
+    depth = 2;
+    outerRad = 5.5;
+    lineWidth = 2;
+
+    outerDia = outerRad * 2;
+    sideLen = outerDia * 2 - lineWidth;
+    yMountCenter = (
+        standDepth / 2 - nutMountBorderOffset - nutMountOuterRad
+    );
+
+    translate([0,yMountCenter,6])
+    linear_extrude(depth+0.5) {
         difference() {
-            translate([-neg_w,0,0])
-                square([rad+w+neg_w, rad+w+neg_w+4]);
-            circle(rad);
+            circle(outerDia+lineWidth);
+            union() {
+                difference() {
+                    rotate(22.5)
+                    circle(outerDia, $fn=8);
+                    rotate(22.5)
+                    circle(outerDia-lineWidth, $fn=8);
+                    square([lineWidth,outerDia*2], center=true);
+                }
+                translate([-lineWidth, 0, 0])
+                    square([lineWidth,sideLen], center=true);
+                translate([lineWidth, 0, 0])
+                    square([lineWidth,sideLen], center=true);
+            }
+
         }
+        
     }
 }
 
-thinkvision_vesa_adapter();
+thinkvisionVesaAdapter();
