@@ -63,6 +63,10 @@ module thinkvisionVesaAdapter() {
         fingerGripHoles();
         logo();
     }
+
+    if (Include_leg_cutout_helper_tool) {
+        legCutoutTool();
+    }
 }
 
 module legCutoutTool() {
@@ -412,4 +416,3 @@ module getLogo() {
 }
 
 thinkvisionVesaAdapter();
-legCutoutTool();
