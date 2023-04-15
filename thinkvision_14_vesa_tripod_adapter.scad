@@ -1,7 +1,5 @@
 include <./lib/polyround.scad>
 
-$fn=64;
-
 Include_Logo = true;
 
 /* [Legs] */
@@ -17,20 +15,14 @@ Include_leg_cutout_helper_tool = true;
 // Add two holes that can be used as finger grips
 Add_finger_grips = true;
 Finger_grip_radius = 9; // [4:12]
+Finger_grip_Height = 5; // [4:8]
 
+// TODO add bolt & nut mount settings
 
-mountOuterRad = 8; // [7:15]
-
-
-// Legs
-legsHeight = 7; // Just enough space for vesa bolt head
-isRoundedLegs = false;
-
-// Finger grips
-fingerGripRad = 9;
-fingerGripHeight = 5;
 
 /* [Hidden] */
+$fn=64;
+mountOuterRad = Leg_width / 2;
 vesaMountingPointDistance = 100;
 roundingRad = 2;
 
@@ -53,15 +45,31 @@ module thinkvisionVesaAdapter() {
     difference() {
         union() {
             basePlate();
+            if (Leg_type == "cutout") {
+                // Just enough space for vesa bolt head
+                getStandLegs(7, false); 
+            }
+            if (Leg_type == "flat") {
+                getStandLegs(8, false); 
+            }
+            if (Leg_type == "elevated") {
+                getStandLegs(9, true); 
+            }
             standLegs(legsHeight);
             truncatedNutMount();
-            fingerGrips();
+            if (Add_finger_grips) {
+                fingerGrips();
+            }
         }
         lowerPlateRounding();
         mountHoles();
         nutHole();
-        fingerGripHoles();
-        logo();
+        if (Add_finger_grips) {
+            fingerGripHoles();
+        }
+        if (Include_Logo) {
+            logo();
+        }
     }
 
     if (Include_leg_cutout_helper_tool) {
@@ -126,7 +134,7 @@ module basePlate() {
     }
 }
 
-module standLegs(height) {
+module getStandLegs(height, isRoundedLegs) {
     xOuter = vesaMountingPointDistance / 2 + mountOuterRad;
     xInner = vesaMountingPointDistance / 2 - mountOuterRad;
     y = standDepth / 2;
@@ -158,7 +166,7 @@ module standLegs(height) {
 module truncatedNutMount() {
     difference() {
         nutMount();
-        standLegs(nutMountHeight+baseHeight);
+        getStandLegs(10, false);
     }
 }
 
@@ -283,10 +291,10 @@ module mountHoles() {
 
 module boltHole() {
     translate([0,0,-0.5])
-    cylinder(legsHeight+1, r=boltBodyHoleRad);
+    cylinder(10, r=boltBodyHoleRad);
 
     translate([0,0, boltBodyLength])
-    cylinder(legsHeight-boltBodyLength+0.5, r=boltCapHoleRad);
+    cylinder(10-boltBodyLength, r=boltCapHoleRad);
 }
 
 module nutHole() {
@@ -304,14 +312,14 @@ module nutHole() {
 }
 
 module fingerGrips() {
-    rad = fingerGripRad;
-    height = fingerGripHeight;
+    rad = Finger_grip_radius;
+    height = Finger_grip_Height;
     xOffset = (
         (vesaMountingPointDistance/2 - mountOuterRad)
         + nutMountOuterRad
     ) / 2;
     yOffset = -(
-        standDepth/2 - nutMountBorderOffset - fingerGripRad
+        standDepth/2 - nutMountBorderOffset - Finger_grip_radius
     );
 
     points = [
@@ -340,14 +348,14 @@ module fingerGrips() {
 }
 
 module fingerGripHoles() {
-    rad = fingerGripRad - 2*roundingRad;
-    height = fingerGripHeight;
+    rad = Finger_grip_radius - 2*roundingRad;
+    height = Finger_grip_Height;
     xOffset = (
         (vesaMountingPointDistance/2 - mountOuterRad)
         + nutMountOuterRad
     ) / 2;
     yOffset = -(
-        standDepth/2 - nutMountBorderOffset - fingerGripRad
+        standDepth/2 - nutMountBorderOffset - Finger_grip_radius
     );
 
     points = [
@@ -376,12 +384,6 @@ module fingerGripHoles() {
 }
 
 module logo() {
-    if (Include_Logo) {
-        getLogo();
-    }
-}
-
-module getLogo() {
     depth = 2;
     outerRad = 5.5;
     lineWidth = 2;
