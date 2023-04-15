@@ -25,16 +25,22 @@ nutSideToSideLen = 12;
 nutMountOuterRad = 15;
 nutMountBorderOffset = 10;
 
+// Finger grips
+fingerGripRad = 9;
+fingerGripHeight = 5;
+
 module thinkvisionVesaAdapter() {
     difference() {
         union() {
             basePlate();
             standLegs();
             nutMount();
+            fingerGrips();
         }
         lowerPlateRounding();
         mountHoles();
         nutHole();
+        fingerGripHoles();
         logo();
     }
 }
@@ -245,6 +251,78 @@ module nutHole() {
         rotate([0,0,120])cube([wid/1.7,wid,height],center = true);
         rotate([0,0,240])cube([wid/1.7,wid,height],center = true);
     }
+}
+
+module fingerGrips() {
+    rad = fingerGripRad;
+    height = fingerGripHeight;
+    xOffset = (
+        (vesaMountingPointDistance/2 - mountOuterRad)
+        + nutMountOuterRad
+    ) / 2;
+    yOffset = -(
+        standDepth/2 - nutMountBorderOffset - fingerGripRad
+    );
+
+    points = [
+        [-rad, -rad, rad],
+        [rad, -rad, rad],
+        [rad, rad, rad],
+        [-rad, rad, rad],
+    ];
+
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        roundingRad,
+        0
+    );
+}
+
+module fingerGripHoles() {
+    rad = fingerGripRad - 2*roundingRad;
+    height = fingerGripHeight;
+    xOffset = (
+        (vesaMountingPointDistance/2 - mountOuterRad)
+        + nutMountOuterRad
+    ) / 2;
+    yOffset = -(
+        standDepth/2 - nutMountBorderOffset - fingerGripRad
+    );
+
+    points = [
+        [-rad, -rad, rad],
+        [rad, -rad, rad],
+        [rad, rad, rad],
+        [-rad, rad, rad],
+    ];
+
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        -roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([xOffset, yOffset, 0])
+    polyRoundExtrude(
+        points,
+        height,
+        -roundingRad,
+        0
+    );
 }
 
 module logo() {
