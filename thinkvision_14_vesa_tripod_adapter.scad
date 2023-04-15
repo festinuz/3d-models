@@ -372,6 +372,12 @@ module fingerGripHoles() {
 }
 
 module logo() {
+    if (Include_Logo) {
+        getLogo();
+    }
+}
+
+module getLogo() {
     depth = 2;
     outerRad = 5.5;
     lineWidth = 2;
