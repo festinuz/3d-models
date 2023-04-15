@@ -1,5 +1,210 @@
+include <./lib/polyround.scad>
+
 $fn=64;
 
+// Consts
+vesaMountingPointDistance = 100;
+roundingRad = 2;
+
+// If 86: no lower rounding for base plate needed
+// If 89: matches closed display with curve,lower rounding
+// for base plate needed
+// If 94 matches open display with curve, lower rounding
+// for base plate needed
+standDepth = 89; //[85:94]
+mountOuterRad = 8; // [7:15]
+baseHeight = 4; // [3:8]
+
+// Legs
+legsHeight = 8;
+isRoundedLegs = false;
+
+// Nut mount
+nutMountHeight = 4;
+nutSideToSideSize = 12;
+nutMountOuterRad = 15;
+nutMountBorderOffset = 10;
+
+module thinkvisionVesaAdapter() {
+    difference() {
+        union() {
+            basePlate();
+            standLegs();
+            nutMount();
+        }
+        lowerPlateRounding();
+    }
+}
+
+module basePlate() {
+    xOffset = vesaMountingPointDistance / 2 + mountOuterRad;
+    yOffset = standDepth / 2;
+    platePoints = [
+        [-xOffset, -yOffset, mountOuterRad],
+        [-xOffset, yOffset, mountOuterRad],
+        [xOffset, yOffset, mountOuterRad],
+        [xOffset, -yOffset, mountOuterRad]
+    ];
+    
+
+    xBeamOffset = vesaMountingPointDistance / 2;
+    yBeamOffset = yOffset;
+    frontRoundingBeamPoints = [
+        [-xBeamOffset, -yBeamOffset, 0],
+        [xBeamOffset, -yBeamOffset, 0],
+        [xBeamOffset, -yBeamOffset-roundingRad, 0],
+        [-xBeamOffset, -yBeamOffset-roundingRad, 0]
+    ];
+
+    difference() {
+        linear_extrude(baseHeight)
+            polygon(polyRound(platePoints,30));
+        
+        // Base top side front edge rounding
+        polyRoundExtrude(
+            frontRoundingBeamPoints,
+            baseHeight,
+            -roundingRad,
+            0
+        );
+    }
+}
+
+module standLegs() {
+    xOuter = vesaMountingPointDistance / 2 + mountOuterRad;
+    xInner = vesaMountingPointDistance / 2 - mountOuterRad;
+    y = standDepth / 2;
+    legRoundingRad = isRoundedLegs? roundingRad : 0;
+
+    legPoints = [
+        [-xOuter, -y, mountOuterRad],
+        [-xOuter, y, mountOuterRad],
+        [-xInner, y, mountOuterRad],
+        [-xInner, -y, mountOuterRad]
+    ];
+
+    polyRoundExtrude(
+        legPoints,
+        legsHeight,
+        legRoundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    polyRoundExtrude(
+        legPoints,
+        legsHeight,
+        legRoundingRad,
+        0
+    );
+}
+
+module nutMount() {
+    x = vesaMountingPointDistance / 2 - mountOuterRad;
+    yOuter = standDepth / 2;
+    yInner = standDepth / 2 - 2*mountOuterRad;
+    yMountCenter = -yOuter + nutMountBorderOffset;
+
+    nutMountRightHalfPlatePoints = [
+        [-nutMountOuterRad, yOuter, 0],
+        [x+mountOuterRad, yOuter, 0],
+        [x, yInner, 0],
+        [nutMountOuterRad, yMountCenter+nutMountOuterRad, 0],
+        [nutMountOuterRad, yMountCenter, nutMountOuterRad],
+        [0, yMountCenter, 0],
+        [-nutMountOuterRad, yMountCenter+nutMountOuterRad, 0]
+    ];
+
+    translate([0,0,4])
+    polyRoundExtrude(
+        nutMountRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([0,0,4])
+    polyRoundExtrude(
+        nutMountRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
+
+    xLegInner = vesaMountingPointDistance/2 - mountOuterRad;
+    xNutMount = (nutMountOuterRad + xLegInner) / 2;
+    xMiddlePoint = (xLegInner + xNutMount) / 2;
+
+    legConRad = (xLegInner - xNutMount) / 2;
+
+    yMiddlePoint = (
+        (yMountCenter + nutMountOuterRad + yInner) / 2 + legConRad
+    );
+    yLegInner = yMiddlePoint - legConRad;
+    yNutMount = yLegInner;
+    
+    nutMountLegConnectorRightHalfPlatePoints = [
+        [nutMountOuterRad, yMountCenter+nutMountOuterRad, 0],
+        [xNutMount,       yNutMount,           0],
+        [xMiddlePoint,    yMiddlePoint,        legConRad],
+        [xLegInner,       yLegInner,           legConRad],
+        [xLegInner,       yLegInner-legConRad, 0],
+        [x+mountOuterRad, yLegInner-legConRad, 0],
+        [x,               yOuter,              0],
+        [xNutMount,       yOuter,              0]
+    ];
+
+    translate([0,0,4])
+    polyRoundExtrude(
+        nutMountLegConnectorRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
+
+    mirror([1, 0, 0])
+    translate([0,0,4])
+    polyRoundExtrude(
+        nutMountLegConnectorRightHalfPlatePoints,
+        nutMountHeight,
+        roundingRad,
+        0
+    );
+}
+
+module lowerPlateRounding() {
+    xInner = vesaMountingPointDistance / 2 + mountOuterRad;
+    xOuter = xInner + roundingRad;
+    yInner = standDepth / 2;
+    yOuter = yInner + roundingRad;
+    
+    backRoundingPoints = [
+        [-xInner, yInner, mountOuterRad],
+        [xInner, yInner, mountOuterRad],
+        [xInner, yInner-mountOuterRad, 0],
+        [xOuter, yInner-mountOuterRad, 0],
+        [xOuter, yOuter, 0],
+        [-xOuter, yOuter, 0],
+        [-xOuter, yInner-mountOuterRad, 0],
+        [-xInner, yInner-mountOuterRad, 0]
+    ];
+    
+    polyRoundExtrude(
+        backRoundingPoints,
+        roundingRad,
+        0,
+        -roundingRad
+    );
+
+    mirror([0, 1, 0])
+    polyRoundExtrude(
+        backRoundingPoints,
+        roundingRad,
+        0,
+        -roundingRad
+    );
+}
 
 module thinkvision_vesa_adapter() {
     base_h=4;
@@ -132,4 +337,4 @@ module round_inner_corner(rad, h, w, neg_w) {
     }
 }
 
-thinkvision_vesa_adapter();
+thinkvisionVesaAdapter();
