@@ -21,7 +21,7 @@ isRoundedLegs = false;
 
 // Nut mount
 nutMountHeight = 4;
-nutSideToSideSize = 12;
+nutSideToSideLen = 12;
 nutMountOuterRad = 15;
 nutMountBorderOffset = 10;
 
@@ -32,7 +32,9 @@ module thinkvisionVesaAdapter() {
             standLegs();
             nutMount();
         }
-        lowerPlateRounding();
+        %lowerPlateRounding();
+        %mountHoles();
+        %nutHole();
     }
 }
 
@@ -115,7 +117,7 @@ module nutMount() {
         [-nutMountOuterRad, yMountCenter+nutMountOuterRad, 0]
     ];
 
-    translate([0,0,4])
+    translate([0,0,baseHeight])
     polyRoundExtrude(
         nutMountRightHalfPlatePoints,
         nutMountHeight,
@@ -124,7 +126,7 @@ module nutMount() {
     );
 
     mirror([1, 0, 0])
-    translate([0,0,4])
+    translate([0,0,baseHeight])
     polyRoundExtrude(
         nutMountRightHalfPlatePoints,
         nutMountHeight,
@@ -155,7 +157,7 @@ module nutMount() {
         [xNutMount,       yOuter,              0]
     ];
 
-    translate([0,0,4])
+    translate([0,0,baseHeight])
     polyRoundExtrude(
         nutMountLegConnectorRightHalfPlatePoints,
         nutMountHeight,
@@ -164,7 +166,7 @@ module nutMount() {
     );
 
     mirror([1, 0, 0])
-    translate([0,0,4])
+    translate([0,0,baseHeight])
     polyRoundExtrude(
         nutMountLegConnectorRightHalfPlatePoints,
         nutMountHeight,
@@ -204,6 +206,44 @@ module lowerPlateRounding() {
         0,
         -roundingRad
     );
+}
+
+module mountHoles() {
+    x = vesaMountingPointDistance / 2;
+    y = 36.25;
+
+    translate([x, y, 0])
+    boltHole();
+
+
+    translate([-x, y, 0])
+    boltHole();
+}
+
+module boltHole() {
+    boltBodyHoleRad = 2;
+    boltCapHoleRad = 4;
+    boltBodyLength = 4;
+
+    translate([0,0,-0.5])
+    cylinder(legsHeight+1, r=boltBodyHoleRad);
+
+    translate([0,0, boltBodyLength])
+    cylinder(legsHeight-boltBodyLength+0.5, r=boltCapHoleRad);
+}
+
+module nutHole() {
+    wid = nutSideToSideLen;
+    yOffset = -(standDepth/2 - nutMountBorderOffset - nutMountOuterRad);
+    bottomOffset = 2;  // Minimum 3d-printable offset
+    height = baseHeight + nutMountHeight - bottomOffset+0.5;
+
+    translate([0,yOffset, bottomOffset + height/2])
+    hull() {
+        cube([wid/1.7,wid,height],center = true);
+        rotate([0,0,120])cube([wid/1.7,wid,height],center = true);
+        rotate([0,0,240])cube([wid/1.7,wid,height],center = true);
+    }
 }
 
 module thinkvision_vesa_adapter() {
