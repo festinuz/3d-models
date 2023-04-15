@@ -2,26 +2,45 @@ include <./lib/polyround.scad>
 
 $fn=64;
 
-// Consts
+Include_Logo = true;
+
+/* [Legs] */
+Leg_width = 16; // [14:1:30]
+
+// Print rounded plastic legs or leave space for leg cutouts
+Leg_type = "cutout"; // [cutout, flat, elevated]
+
+// Print leg-sized tool to help making leg cutouts
+Include_leg_cutout_helper_tool = true;
+
+/* [Finger grips] */
+// Add two holes that can be used as finger grips
+Add_finger_grips = true;
+Finger_grip_radius = 9; // [4:12]
+
+
+mountOuterRad = 8; // [7:15]
+
+
+// Legs
+legsHeight = 7; // Just enough space for vesa bolt head
+isRoundedLegs = false;
+
+// Finger grips
+fingerGripRad = 9;
+fingerGripHeight = 5;
+
+/* [Hidden] */
 vesaMountingPointDistance = 100;
 roundingRad = 2;
 
-// If 86: no lower rounding for base plate needed
-// If 89: matches closed display with curve,lower rounding
-// for base plate needed
-// If 94 matches open display with curve, lower rounding
-// for base plate needed
-standDepth = 89; //[85:94]
-mountOuterRad = 8; // [7:15]
-baseHeight = 4; // [3:8]
-
-// Legs
-legsHeight = 7; // TODO check that i have this before printing
-isRoundedLegs = false;
+// Base
+standDepth = 89;
+baseHeight = 4;
 
 // Bolt mount
-boltBodyHoleRad = 1.95;
-boltCapHoleRad = 3.9;
+boltBodyHoleRad = 1.9;
+boltCapHoleRad = 3.8;
 boltBodyLength = 4;
 
 // Nut mount
@@ -29,10 +48,6 @@ nutMountHeight = 4;
 nutSideToSideLen = 12;
 nutMountOuterRad = 15;
 nutMountBorderOffset = 10;
-
-// Finger grips
-fingerGripRad = 9;
-fingerGripHeight = 5;
 
 module thinkvisionVesaAdapter() {
     difference() {
@@ -67,7 +82,7 @@ module legCutoutTool() {
     rotate(270)
     polyRoundExtrude(
         legPoints,
-        4,
+        2,
         roundingRad,
         0
     );
