@@ -50,6 +50,29 @@ module thinkvisionVesaAdapter() {
     }
 }
 
+module legCutoutTool() {
+    x = 2*mountOuterRad;
+    y = standDepth;
+
+    legPoints = [
+        [0, 0, mountOuterRad],
+        [0, y, mountOuterRad],
+        [x, y, mountOuterRad],
+        [x, 0, mountOuterRad]
+    ];
+
+    xOffset = -(vesaMountingPointDistance / 2 + mountOuterRad);
+    yOffset = -(standDepth/2 + mountOuterRad);
+    translate([xOffset, yOffset, 0])
+    rotate(270)
+    polyRoundExtrude(
+        legPoints,
+        4,
+        roundingRad,
+        0
+    );
+}
+
 module basePlate() {
     xOffset = vesaMountingPointDistance / 2 + mountOuterRad;
     yOffset = standDepth / 2;
@@ -368,3 +391,4 @@ module logo() {
 }
 
 thinkvisionVesaAdapter();
+legCutoutTool();
