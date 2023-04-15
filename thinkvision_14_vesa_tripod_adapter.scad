@@ -115,7 +115,7 @@ module nutMount() {
         [nutMountOuterRad, yMountCenter+nutMountOuterRad, 0],
         [nutMountOuterRad, yMountCenter, nutMountOuterRad],
         [0, yMountCenter, 0],
-        [-nutMountOuterRad, yMountCenter+nutMountOuterRad, 0]
+        [-nutMountOuterRad, yMountCenter, nutMountOuterRad]
     ];
 
     translate([0,0,baseHeight])
@@ -154,7 +154,7 @@ module nutMount() {
         [xLegInner,       yLegInner,           legConRad],
         [xLegInner,       yLegInner-legConRad, 0],
         [x+mountOuterRad, yLegInner-legConRad, 0],
-        [x,               yOuter,              0],
+        [x+mountOuterRad, yOuter,              0],
         [xNutMount,       yOuter,              0]
     ];
 
